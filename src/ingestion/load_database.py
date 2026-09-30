@@ -1,22 +1,44 @@
 import sqlite3
+
 import pandas as pd
 
-file_path = "data/processed/sales_clean.csv"
 
-df = pd.read_csv(file_path)
+FILE_PATH = "data/processed/sales_clean.csv"
+DATABASE_PATH = "data/sales.db"
 
-conexao = sqlite3.connect("data/sales.db")
 
-df.to_sql('sales', conexao, index=False, if_exists='replace')
+df = pd.read_csv(FILE_PATH)
 
-conexao.close()
+connection = sqlite3.connect(DATABASE_PATH)
 
-conexao = sqlite3.connect("data/sales.db")
-cursor = conexao.cursor()
+df.to_sql(
+    "sales",
+    connection,
+    index=False,
+    if_exists="replace",
+)
+
+customers = (
+    df[["Customer ID", "Customer Name", "Segment"]]
+    .drop_duplicates(subset=["Customer ID"])
+)
+
+customers.to_sql(
+    "customers",
+    connection,
+    index=False,
+    if_exists="replace",
+)
+
+cursor = connection.cursor()
 
 cursor.execute("SELECT COUNT(*) FROM sales")
-resultado = cursor.fetchall()
+sales_count = cursor.fetchone()[0]
 
-print(resultado)
+cursor.execute("SELECT COUNT(*) FROM customers")
+customers_count = cursor.fetchone()[0]
 
-conexao.close()
+print(f"Sales records: {sales_count}")
+print(f"Customers: {customers_count}")
+
+connection.close()

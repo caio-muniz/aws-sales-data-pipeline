@@ -1,45 +1,48 @@
--- 1. Quantidade de registros
-SELECT COUNT(*)
-FROM sales;
-
-
--- 2. Faturamento total
-SELECT SUM(Sales) AS total_sales
-FROM sales;
-
-
--- 3. Faturamento por categoria
+-- 1. Sales and profit by customer segment
 SELECT
-    Category,
-    SUM(Sales) AS total_sales
+    customers."Segment",
+    SUM(sales."Sales") AS total_sales,
+    SUM(sales."Profit") AS total_profit
 FROM sales
-GROUP BY Category
+JOIN customers
+    ON sales."Customer ID" = customers."Customer ID"
+GROUP BY customers."Segment"
 ORDER BY total_sales DESC;
 
 
--- 4. Lucro total por categoria
+-- 2. Sales by customer segment using a CTE
+WITH segment_sales AS (
+    SELECT
+        customers."Segment",
+        SUM(sales."Sales") AS total_sales,
+        SUM(sales."Profit") AS total_profit
+    FROM sales
+    JOIN customers
+        ON sales."Customer ID" = customers."Customer ID"
+    GROUP BY customers."Segment"
+)
 SELECT
-    Category,
-    SUM(Profit) AS total_profit
-FROM sales
-GROUP BY Category
-ORDER BY total_profit DESC;
-
-
--- 5. Vendas por região
-SELECT
-    Region,
-    SUM(Sales) AS total_sales
-FROM sales
-GROUP BY Region
+    "Segment",
+    total_sales,
+    total_profit
+FROM segment_sales
 ORDER BY total_sales DESC;
 
 
--- 6. Produtos mais vendidos em faturamento
+-- 3. Top 10 products by sales
+WITH product_sales AS (
+    SELECT
+        "Product Name",
+        SUM("Sales") AS total_sales
+    FROM sales
+    GROUP BY "Product Name"
+)
 SELECT
     "Product Name",
-    SUM(Sales) AS total_sales
-FROM sales
-GROUP BY "Product Name"
-ORDER BY total_sales DESC
+    total_sales,
+    RANK() OVER (
+        ORDER BY total_sales DESC
+    ) AS sales_rank
+FROM product_sales
+ORDER BY sales_rank
 LIMIT 10;
